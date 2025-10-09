@@ -2,6 +2,8 @@ class Conninfo {
     constructor(parentId) {
         if (!parentId) throw "Missing parameters";
 
+        const { prettyBytes, smoothie } = window.eDEX;
+
         // Create DOM
         this.parent = document.getElementById(parentId);
         this.parent.innerHTML += `<div id="mod_conninfo">
@@ -16,11 +18,11 @@ class Conninfo {
 
         this.current = document.querySelector("#mod_conninfo_innercontainer > h1 > i");
         this.total = document.querySelector("#mod_conninfo_innercontainer > h2 > i");
-        this._pb = require("pretty-bytes");
+        this._pb = prettyBytes;
 
         // Init Smoothie
-        let TimeSeries = require("smoothie").TimeSeries;
-        let SmoothieChart = require("smoothie").SmoothieChart;
+        let TimeSeries = smoothie.TimeSeries;
+        let SmoothieChart = smoothie.SmoothieChart;
 
         // Set chart options
         let chartOptions = [{
@@ -91,6 +93,4 @@ class Conninfo {
     }
 }
 
-module.exports = {
-    Conninfo
-};
+window.Conninfo = Conninfo;

@@ -191,11 +191,12 @@ function createWindow(settings) {
         frame: settings.allowWindowed || false,
         backgroundColor: '#000000',
         webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
             devTools: true,
-            contextIsolation: false,
+            contextIsolation: true,
             backgroundThrottling: false,
             webSecurity: true,
-            nodeIntegration: true,
+            nodeIntegration: false,
             nodeIntegrationInSubFrames: false,
             allowRunningInsecureContent: false,
             experimentalFeatures: settings.experimentalFeatures || false
@@ -272,6 +273,11 @@ app.on('ready', async () => {
     signale.pending("Starting multithreaded calls controller...");
     require("./_multithread.js");
 
+    // Network worker IPC handlers
+    const netWorker = require('./_net_worker.js');
+    ipc.handle('get-external-ip', (event, localAddress) => netWorker.getExternalIp(localAddress));
+    ipc.handle('ping', (event, target, port, local) => netWorker.ping(target, port, local));
+
     createWindow(settings);
 
     // Support for more terminals, used for creating tabs (currently limited to 4 extra terms)
@@ -344,6 +350,39 @@ app.on('ready', async () => {
     });
     ipc.on("setKbOverride", (e, arg) => {
         kbOverride = arg;
+    });
+
+    // Update Checker
+    const https = require("https");
+    https.get({
+        protocol: "https:",
+        host: "api.github.com",
+        path: "/repos/GitSquared/edex-ui/releases/latest",
+        headers: { "User-Agent": "eDEX-UI UpdateChecker" }
+    }, res => {
+        let rawData = "";
+        res.on('data', chunk => { rawData += chunk; });
+        res.on('end', () => {
+            if (res.statusCode === 200) {
+                try {
+                    const release = JSON.parse(rawData);
+                    const currentVersion = app.getVersion();
+                    const latestVersion = release.tag_name.slice(1);
+                    if (latestVersion !== currentVersion && Number(latestVersion.replace(/\./g, "")) > Number(currentVersion.replace("-pre", "").replace(/\./g, ""))) {
+                        win.webContents.send('new-version-available', release);
+                        signale.info(`UpdateChecker: New version ${release.tag_name} available.`);
+                    } else {
+                        signale.info("UpdateChecker: Running latest version.");
+                    }
+                } catch (e) {
+                    signale.warn("UpdateChecker: Could not parse release data.", e);
+                }
+            } else {
+                signale.warn(`UpdateChecker: Failed to fetch release info. Status code: ${res.statusCode}`);
+            }
+        });
+    }).on('error', e => {
+        signale.warn("UpdateChecker: Could not fetch latest release from GitHub's API.", e);
     });
 });
 

@@ -4,10 +4,12 @@ class Modal {
     constructor(options, onclose) {
         if (!options || !options.type) throw "Missing parameters";
 
+        const { nanoid: nanoidGenerator } = window.eDEX;
+
         this.type = options.type;
-        this.id = require("nanoid").nanoid();
+        this.id = nanoidGenerator();
         while (typeof window.modals[this.id] !== "undefined") {
-            this.id = require("nanoid")();
+            this.id = nanoidGenerator();
         }
         this.title = options.title || options.type || "Modal window";
         this.message = options.message || "Lorem ipsum dolor sit amet.";
@@ -181,6 +183,4 @@ class Modal {
     }
 }
 
-module.exports = {
-    Modal
-};
+window.Modal = Modal;

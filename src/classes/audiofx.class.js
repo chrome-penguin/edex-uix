@@ -1,7 +1,7 @@
 class AudioManager {
     constructor() {
-        const path = require("path");
-        const {Howl, Howler} = require("howler");
+        const { path, __dirname, howler } = window.eDEX;
+        const { Howl, Howler } = howler;
 
         if (window.settings.audio === true) {
             if(window.settings.disableFeedbackAudio === false) {
@@ -68,6 +68,4 @@ class AudioManager {
     }
 }
 
-module.exports = {
-    AudioManager
-};
+window.AudioManager = AudioManager;

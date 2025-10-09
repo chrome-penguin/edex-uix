@@ -117,6 +117,7 @@ class FuzzyFinder {
         this.results.innerHTML = html;
       }
       submit() {
+         const { path } = window.eDEX;
          let file = document.querySelector("li.fuzzyFinderMatchSelected").innerText;
          if (file === "No results" || file.length <= 0) {
              this.disp.close();
@@ -130,6 +131,4 @@ class FuzzyFinder {
      }
 }
 
-module.exports = {
-    FuzzyFinder
-};
+window.FuzzyFinder = FuzzyFinder;

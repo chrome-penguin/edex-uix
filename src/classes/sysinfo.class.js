@@ -2,17 +2,19 @@ class Sysinfo {
     constructor(parentId) {
         if (!parentId) throw "Missing parameters";
 
+        const { os } = window.eDEX;
+
         // See #255
-        let os;
-        switch (require("os").platform()) {
+        let osPlatform;
+        switch (os.platform()) {
             case "darwin":
-                os = "macOS";
+                osPlatform = "macOS";
                 break;
             case "win32":
-                os = "win";
+                osPlatform = "win";
                 break;
             default:
-                os = require("os").platform();
+                osPlatform = os.platform();
         }
 
         // Create DOM
@@ -28,7 +30,7 @@ class Sysinfo {
             </div>
             <div>
                 <h1>TYPE</h1>
-                <h2>${os}</h2>
+                <h2>${osPlatform}</h2>
             </div>
             <div>
                 <h1>POWER</h1>
@@ -98,8 +100,9 @@ class Sysinfo {
         }, timeToNewDay);
     }
     updateUptime() {
+        const { os } = window.electron;
         let uptime = {
-            raw: Math.floor(require("os").uptime()),
+            raw: Math.floor(os.uptime()),
             days: 0,
             hours: 0,
             minutes: 0
@@ -134,6 +137,4 @@ class Sysinfo {
     }
 }
 
-module.exports = {
-    Sysinfo
-};
+window.Sysinfo = Sysinfo;

@@ -34,11 +34,7 @@ window.onerror = (msg, path, line, col, error) => {
     document.getElementById("boot_screen").innerHTML += `${error} :  ${msg}<br/>==> at ${path}  ${line}:${col}`;
 };
 
-const path = require("path");
-const fs = require("fs");
-const electron = require("electron");
-const remote = require("@electron/remote");
-const ipc = electron.ipcRenderer;
+const { path, fs, ipc, remote, os, nanoid: nanoidGenerator, username: getUsername, webFrame, shell, __dirname } = window.eDEX;
 
 const settingsDir = remote.app.getPath("userData");
 const themesDir = path.join(settingsDir, "themes");
@@ -49,9 +45,9 @@ const shortcutsFile = path.join(settingsDir, "shortcuts.json");
 const lastWindowStateFile = path.join(settingsDir, "lastWindowState.json");
 
 // Load config
-window.settings = require(settingsFile);
-window.shortcuts = require(shortcutsFile);
-window.lastWindowState = require(lastWindowStateFile);
+window.settings = JSON.parse(fs.readFileSync(settingsFile, "utf8"));
+window.shortcuts = JSON.parse(fs.readFileSync(shortcutsFile, "utf8"));
+window.lastWindowState = JSON.parse(fs.readFileSync(lastWindowStateFile, "utf8"));
 
 // Load CLI parameters
 if (remote.process.argv.includes("--nointro")) {
@@ -59,7 +55,7 @@ if (remote.process.argv.includes("--nointro")) {
 } else {
     window.settings.nointroOverride = false;
 }
-if (electron.remote.process.argv.includes("--nocursor")) {
+if (remote.process.argv.includes("--nocursor")) {
     window.settings.nocursorOverride = true;
 } else {
     window.settings.nocursorOverride = false;
@@ -70,9 +66,9 @@ ipc.once("getThemeOverride", (e, theme) => {
     if (theme !== null) {
         window.settings.theme = theme;
         window.settings.nointroOverride = true;
-        _loadTheme(require(path.join(themesDir, window.settings.theme+".json")));
+        _loadTheme(JSON.parse(fs.readFileSync(path.join(themesDir, window.settings.theme+".json"), "utf8")));
     } else {
-        _loadTheme(require(path.join(themesDir, window.settings.theme+".json")));
+        _loadTheme(JSON.parse(fs.readFileSync(path.join(themesDir, window.settings.theme+".json"), "utf8")));
     }
 });
 ipc.send("getThemeOverride");
@@ -176,8 +172,6 @@ function waitForFonts() {
 
 // A proxy function used to add multithreading to systeminformation calls - see backend process manager @ _multithread.js
 function initSystemInformationProxy() {
-    const { nanoid } = require("nanoid/non-secure");
-
     window.si = new Proxy({}, {
         apply: () => {throw new Error("Cannot use sysinfo proxy directly as a function")},
         set: () => {throw new Error("Cannot set a property on the sysinfo proxy")},
@@ -186,7 +180,7 @@ function initSystemInformationProxy() {
                 let callback = (typeof args[args.length - 1] === "function") ? true : false;
 
                 return new Promise((resolve, reject) => {
-                    let id = nanoid();
+                    let id = nanoidGenerator();
                     ipc.once("systeminformation-reply-"+id, (e, res) => {
                         if (callback) {
                             args[args.length - 1](res);
@@ -204,7 +198,7 @@ function initSystemInformationProxy() {
 window.audioManager = new AudioManager();
 
 // See #223
-electron.remote.app.focus();
+remote.app.focus();
 
 let i = 0;
 if (window.settings.nointro || window.settings.nointroOverride) {
@@ -223,7 +217,7 @@ function displayLine() {
     let log = fs.readFileSync(path.join(__dirname, "assets", "misc", "boot_log.txt")).toString().split('\n');
 
     function isArchUser() {
-        return require("os").platform() === "linux"
+        return os.platform() === "linux"
                 && fs.existsSync("/etc/os-release")
                 && fs.readFileSync("/etc/os-release").toString().includes("arch");
     }
@@ -243,7 +237,7 @@ function displayLine() {
 
     switch(true) {
         case i === 2:
-            bootScreen.innerHTML += `eDEX-UI Kernel version ${electron.remote.app.getVersion()} boot at ${Date().toString()}; root:xnu-1699.22.73~1/RELEASE_X86_64`;
+            bootScreen.innerHTML += `eDEX-UI Kernel version ${remote.app.getVersion()} boot at ${Date().toString()}; root:xnu-1699.22.73~1/RELEASE_X86_64`;
         case i === 4:
             setTimeout(displayLine, 500);
             break;
@@ -334,7 +328,7 @@ async function getDisplayName() {
         return user;
 
     try {
-        user = await require("username")();
+        user = await getUsername();
     } catch (e) {}
 
     return user;
@@ -487,7 +481,7 @@ async function initUI() {
     window.onmouseup = e => {
         if (window.keyboard.linkedToTerm) window.term[window.currentTerm].term.focus();
     };
-    window.term[0].term.writeln("\033[1m"+`Welcome to eDEX-UI v${electron.remote.app.getVersion()} - Electron v${process.versions.electron}`+"\033[0m");
+    window.term[0].term.writeln("\033[1m"+`Welcome to eDEX-UI v${remote.app.getVersion()} - Electron v${remote.process.versions.electron}`+"\033[0m");
 
     await _delay(100);
 
@@ -506,7 +500,13 @@ async function initUI() {
 
     await _delay(200);
 
-    window.updateCheck = new UpdateChecker();
+    ipc.on('new-version-available', (e, release) => {
+        new Modal({
+            type: "info",
+            title: "New version available",
+            message: `eDEX-UI <strong>${release.tag_name}</strong> is now available.<br/>Head over to <a href="#" onclick="window.eDEX.shell.openExternal('${release.html_url}')">github.com</a> to download the latest version.`
+        });
+    });
 }
 
 window.themeChanger = theme => {
@@ -603,7 +603,7 @@ window.openSettings = async () => {
         if (th === window.settings.theme) return;
         themes += `<option>${th}</option>`;
     });
-    for (let i = 0; i < electron.remote.screen.getAllDisplays().length; i++) {
+    for (let i = 0; i < remote.screen.getAllDisplays().length; i++) {
         if (i !== window.settings.monitor) monitors += `<option>${i}</option>`;
     }
     let nets = await window.si.networkInterfaces();
@@ -616,7 +616,7 @@ window.openSettings = async () => {
 
     new Modal({
         type: "custom",
-        title: `Settings <i>(v${electron.remote.app.getVersion()})</i>`,
+        title: `Settings <i>(v${remote.app.getVersion()})</i>`,
         html: `<table id="settingsEditor">
                     <tr>
                         <th>Key</th>
@@ -799,10 +799,10 @@ window.openSettings = async () => {
                 <h6 id="settingsEditorStatus">Loaded values from memory</h6>
                 <br>`,
         buttons: [
-            {label: "Open in External Editor", action:`electron.shell.openPath('${settingsFile}');electronWin.minimize();`},
+            {label: "Open in External Editor", action:`shell.openPath('${settingsFile}');remote.getCurrentWindow().minimize();`},
             {label: "Save to Disk", action: "window.writeSettingsFile()"},
             {label: "Reload UI", action: "window.location.reload(true);"},
-            {label: "Restart eDEX", action: "electron.remote.app.relaunch();electron.remote.app.quit();"}
+            {label: "Restart eDEX", action: "remote.app.relaunch();remote.app.quit();"}
         ]
     }, () => {
         // Link the keyboard back to the terminal
@@ -860,6 +860,7 @@ window.writeSettingsFile = () => {
 };
 
 window.toggleFullScreen = () => {
+    const electronWin = remote.getCurrentWindow();
     let useFullscreen = (electronWin.isFullScreen() ? false : true);
     electronWin.setFullScreen(useFullscreen);
 
@@ -907,7 +908,7 @@ window.openShortcutsHelp = () => {
                             <td><input disabled type="text" maxlength=25 value="${cut.trigger}"></td>
                             <td>
                                 <input disabled type="text" placeholder="Run terminal command..." value="${cut.action}">
-                                <input disabled type="checkbox" name="shortcutsHelpNew_Enter" ${(cut.linebreak) ? 'checked' : ''}>
+                                <input disabled type="checkbox" name="shortcutsHelpNew_Enter" ${(cut. linebreak) ? 'checked' : ''}>
                                 <label for="shortcutsHelpNew_Enter">Enter</label>
                             </td>
                         </tr>`;
@@ -916,7 +917,7 @@ window.openShortcutsHelp = () => {
     window.keyboard.detach();
     new Modal({
         type: "custom",
-        title: `Available Keyboard Shortcuts <i>(v${electron.remote.app.getVersion()})</i>`,
+        title: `Available Keyboard Shortcuts <i>(v${remote.app.getVersion()})</i>`,
         html: `<h5>Using either the on-screen or a physical keyboard, you can use the following shortcuts:</h5>
                 <details open id="shortcutsHelpAccordeon1">
                     <summary>Emulator shortcuts</summary>
@@ -943,7 +944,7 @@ window.openShortcutsHelp = () => {
                 </details>
                 <br>`,
         buttons: [
-            {label: "Open Shortcuts File", action:`electron.shell.openPath('${shortcutsFile}');electronWin.minimize();`},
+            {label: "Open Shortcuts File", action:`shell.openPath('${shortcutsFile}');remote.getCurrentWindow().minimize();`},
             {label: "Reload UI", action: "window.location.reload(true);"},
         ]
     }, () => {
@@ -1032,7 +1033,7 @@ window.useAppShortcut = action => {
             window.keyboard.togglePasswordMode();
             return true;
         case "DEV_DEBUG":
-            electron.remote.getCurrentWindow().webContents.toggleDevTools();
+            remote.getCurrentWindow().webContents.toggleDevTools();
             return true;
         case "DEV_RELOAD":
             window.location.reload(true);
@@ -1044,10 +1045,9 @@ window.useAppShortcut = action => {
 };
 
 // Global keyboard shortcuts
-const globalShortcut = electron.remote.globalShortcut;
-globalShortcut.unregisterAll();
-
 window.registerKeyboardShortcuts = () => {
+    remote.globalShortcut.unregisterAll();
+
     window.shortcuts.forEach(cut => {
         if (!cut.enabled) return;
 
@@ -1056,15 +1056,15 @@ window.registerKeyboardShortcuts = () => {
                 for (let i = 1; i <= 5; i++) {
                     let trigger = cut.trigger.replace("X", i);
                     let dfn = () => { window.useAppShortcut(`TAB_${i}`) };
-                    globalShortcut.register(trigger, dfn);
+                    remote.globalShortcut.register(trigger, dfn);
                 }
             } else {
-                globalShortcut.register(cut.trigger, () => {
+                remote.globalShortcut.register(cut.trigger, () => {
                     window.useAppShortcut(cut.action);
                 });
             }
         } else if (cut.type === "shell") {
-            globalShortcut.register(cut.trigger, () => {
+            remote.globalShortcut.register(cut.trigger, () => {
                 let fn = (cut.linebreak) ? "writelr" : "write";
                 window.term[window.currentTerm][fn](cut.action);
             });
@@ -1081,7 +1081,7 @@ window.addEventListener("focus", () => {
 });
 
 window.addEventListener("blur", () => {
-    globalShortcut.unregisterAll();
+    remote.globalShortcut.unregisterAll();
 });
 
 // Prevent showing menu, exiting fullscreen or app with keyboard shortcuts
@@ -1105,13 +1105,13 @@ document.addEventListener("keydown", e => {
 
 // Fix #265
 window.addEventListener("keyup", e => {
-    if (require("os").platform() === "win32" && e.key === "F4" && e.altKey === true) {
-        electron.remote.app.quit();
+    if (os.platform() === "win32" && e.key === "F4" && e.altKey === true) {
+        remote.app.quit();
     }
 });
 
 // Fix double-tap zoom on touchscreens
-electron.webFrame.setVisualZoomLevelLimits(1, 1);
+webFrame.setVisualZoomLevelLimits(1, 1);
 
 // Resize terminal with window
 window.onresize = () => {
@@ -1124,12 +1124,12 @@ window.onresize = () => {
 
 // See #413
 window.resizeTimeout = null;
-let electronWin = electron.remote.getCurrentWindow();
+let electronWin = remote.getCurrentWindow();
 electronWin.on("resize", () => {
     if (settings.keepGeometry === false) return;
     clearTimeout(window.resizeTimeout);
     window.resizeTimeout = setTimeout(() => {
-        let win = electron.remote.getCurrentWindow();
+        let win = remote.getCurrentWindow();
         if (win.isFullScreen()) return false;
         if (win.isMaximized()) {
             win.unmaximize();
@@ -1148,5 +1148,5 @@ electronWin.on("resize", () => {
 });
 
 electronWin.on("leave-full-screen", () => {
-    electron.remote.getCurrentWindow().setSize(960, 540);
+    remote.getCurrentWindow().setSize(960, 540);
 });

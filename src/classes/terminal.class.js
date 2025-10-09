@@ -3,12 +3,8 @@ class Terminal {
         if (opts.role === "client") {
             if (!opts.parentId) throw "Missing options";
 
-            this.xTerm = require("xterm").Terminal;
-            const {AttachAddon} = require("xterm-addon-attach");
-            const {FitAddon} = require("xterm-addon-fit");
-            const {LigaturesAddon} = require("xterm-addon-ligatures");
-            const {WebglAddon} = require("xterm-addon-webgl");
-            this.Ipc = require("electron").ipcRenderer;
+            const { xterm, color: colorFn, ipc, remote } = window.eDEX;
+            const { Terminal: xTerm, AttachAddon, FitAddon, LigaturesAddon, WebglAddon } = xterm;
 
             this.port = opts.port || 3000;
             this.cwd = "";
@@ -23,7 +19,7 @@ class Terminal {
                 while (rows.length < 3) {
                     rows = "0"+rows;
                 }
-                this.Ipc.send("terminal_channel-"+this.port, "Resize", cols, rows);
+                ipc.send("terminal_channel-"+this.port, "Resize", cols, rows);
             };
 
             // Support for custom color filters on the terminal - see #483
@@ -72,12 +68,11 @@ class Terminal {
                 });
             }
 
-            let color = require("color");
             let colorify;
             if (doCustomFilter) {
                 colorify = (base, target) => {
-                    let newColor = color(base);
-                    target = color(target);
+                    let newColor = colorFn(base);
+                    target = colorFn(target);
 
                     for (let i = 0; i < window.theme.terminal.colorFilter.length; i++) {
                         if (window.theme.terminal.colorFilter[i].func === "mix") {
@@ -91,13 +86,13 @@ class Terminal {
                 };
             } else {
                 colorify = (base, target) => {
-                    return color(base).grayscale().mix(color(target), 0.3).hex();
+                    return colorFn(base).grayscale().mix(colorFn(target), 0.3).hex();
                 };
             }
 
             let themeColor = `rgb(${window.theme.r}, ${window.theme.g}, ${window.theme.b})`;
 
-            this.term = new this.xTerm({
+            this.term = new xTerm({
                 cols: 80,
                 rows: 24,
                 cursorBlink: window.theme.terminal.cursorBlink || true,
@@ -149,8 +144,8 @@ class Terminal {
             document.querySelectorAll('.xterm-helper-textarea').forEach(textarea => textarea.setAttribute('readonly', 'readonly'))
             this.term.focus();
 
-            this.Ipc.send("terminal_channel-"+this.port, "Renderer startup");
-            this.Ipc.on("terminal_channel-"+this.port, (e, ...args) => {
+            ipc.send("terminal_channel-"+this.port, "Renderer startup");
+            ipc.on("terminal_channel-"+this.port, (e, ...args) => {
                 switch(args[0]) {
                     case "New cwd":
                         this.cwd = args[1];
@@ -248,8 +243,7 @@ class Terminal {
                 let {cols, rows} = fitAddon.proposeDimensions();
 
                 // Apply custom fixes based on screen ratio, see #302
-                let w = screen.width;
-                let h = screen.height;
+                const { width: w, height: h } = remote.screen.getPrimaryDisplay().workAreaSize;
                 let x = 1;
                 let y = 0;
 
@@ -484,6 +478,4 @@ class Terminal {
     }
 }
 
-module.exports = {
-    Terminal
-};
+window.Terminal = Terminal;
