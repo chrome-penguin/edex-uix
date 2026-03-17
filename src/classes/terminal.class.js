@@ -478,4 +478,8 @@ class Terminal {
     }
 }
 
-window.Terminal = Terminal;
+if (typeof window !== "undefined") {
+    window.Terminal = Terminal;
+} else {
+    module.exports = { Terminal };
+}

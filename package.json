@@ -87,16 +87,42 @@
     }
   },
   "dependencies": {
-    "clean-css": "5.2.1",
-    "electron": "^30.0.0",
-    "electron-builder": "^26.0.0",
-    "@electron/rebuild": "^3.6.0",
-    "mime-types": "^2.1.33",
-    "node-abi": "2.30.1",
-    "node-json-minify": "1.0.0",
-    "terser": "^5.9.0"
+    "@electron/remote": "^2.1.2",
+    "@xterm/addon-attach": "^0.12.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-ligatures": "^0.10.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.0.0",
+    "augmented-ui": "^2.0.0",
+    "color": "^5.0.3",
+    "geolite2-redist": "^3.1.2",
+    "howler": "^2.2.4",
+    "maxmind": "^5.0.5",
+    "mime-types": "^3.0.2",
+    "nanoid": "^5.1.7",
+    "node-pty": "^1.1.0",
+    "pdfjs-dist": "^4.10.38",
+    "pretty-bytes": "^7.1.0",
+    "shell-env": "^4.0.3",
+    "signale": "^1.4.0",
+    "smoothie": "^1.36.1",
+    "systeminformation": "^5.31.4",
+    "tail": "^2.2.6",
+    "username": "^7.0.0",
+    "which": "^6.0.1",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
+    "clean-css": "^5.3.3",
+    "cson-parser": "^4.0.9",
+    "electron": "^41.0.2",
+    "electron-builder": "^26.8.1",
+    "node-abi": "^4.28.0",
+    "node-json-minify": "^3.0.0",
+    "terser": "^5.39.0"
   },
   "optionalDependencies": {
-    "cson-parser": "4.0.9"
+    "osx-temperature-sensor": "1.0.7"
   }
 }

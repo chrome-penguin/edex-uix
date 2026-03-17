@@ -233,7 +233,9 @@ app.on('ready', async () => {
     if (!require("fs").existsSync(settings.cwd)) throw new Error("Configured cwd path does not exist.");
 
     // See #366
-    let cleanEnv = await require("shell-env")(settings.shell).catch(e => { throw e; });
+    const shellEnv = require("shell-env");
+    const shellEnvFn = typeof shellEnv === 'function' ? shellEnv : shellEnv.shellEnv;
+    let cleanEnv = await shellEnvFn(settings.shell).catch(e => { throw e; });
 
     Object.assign(cleanEnv, {
         TERM: "xterm-256color",
@@ -352,7 +354,10 @@ app.on('ready', async () => {
         kbOverride = arg;
     });
 
+    /*
     // Update Checker
+    // This feature is currently disabled because the original project is archived.
+    // If you're maintaining a fork, you can update the URL below to point to your repository.
     const https = require("https");
     https.get({
         protocol: "https:",
@@ -384,6 +389,7 @@ app.on('ready', async () => {
     }).on('error', e => {
         signale.warn("UpdateChecker: Could not fetch latest release from GitHub's API.", e);
     });
+    */
 });
 
 app.on('web-contents-created', (e, contents) => {

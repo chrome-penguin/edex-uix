@@ -1,3 +1,15 @@
+/**
+ * TODO: Refactor preload.js to follow modern Electron security best practices.
+ *
+ * Currently, this script exposes many powerful Node.js and Electron APIs (fs, path, os, etc.)
+ * directly to the renderer process via contextBridge. In a more secure architecture,
+ * these should be replaced with a limited, purpose-built API that uses Inter-Process
+ * Communication (IPC) to perform specific, validated actions in the main process.
+ *
+ * See Electron's security guide for more details:
+ * https://www.electronjs.org/docs/latest/tutorial/security#12-do-not-expose-electron-apis-to-untrusted-web-content
+ */
+
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 const { app, screen, globalShortcut, getCurrentWindow, shell, clipboard } = require('@electron/remote');
 const fs = require('fs');
