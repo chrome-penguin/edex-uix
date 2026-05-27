@@ -45,15 +45,17 @@ class Netstat {
         this.geoLookup = {
             get: () => null
         };
-        let geolite2 = require("geolite2-redist");
-        let maxmind = require("maxmind");
-        geolite2.downloadDbs(require("path").join(require("@electron/remote").app.getPath("userData"), "geoIPcache")).then(() => {
-           geolite2.open('GeoLite2-City', path => {
-                return maxmind.open(path);
-            }).catch(e => {throw e}).then(lookup => {
-                this.geoLookup = lookup;
-                this.lastconn.finished = true;
-            });
+        const maxmind = require("maxmind");
+        const dbPath = require("path").join(require("@electron/remote").app.getPath("userData"), "geoIPcache");
+        // geolite2-redist v3 is ESM only — load via dynamic import
+        import("geolite2-redist").then(geolite2 => {
+            return geolite2.downloadDbs({ path: dbPath, dbList: ['GeoLite2-City'] })
+                .then(() => geolite2.open('GeoLite2-City', p => maxmind.open(p), dbPath));
+        }).then(lookup => {
+            this.geoLookup = lookup;
+            this.lastconn.finished = true;
+        }).catch(e => {
+            console.warn("GeoIP lookup unavailable:", e);
         });
     }
     updateInfo() {
