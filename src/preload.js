@@ -78,7 +78,13 @@ contextBridge.exposeInMainWorld('eDEX', {
   },
   shell: {
     openPath: (path) => shell.openPath(path),
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => {
+        const parsedUrl = new URL(url);
+        if (['http:', 'https:', 'mailto:'].includes(parsedUrl.protocol)) {
+            return shell.openExternal(url);
+        }
+        console.warn(`Blocked attempt to open external URL with disallowed protocol: ${parsedUrl.protocol}`);
+    },
   },
   webFrame: {
     setVisualZoomLevelLimits: (min, max) => webFrame.setVisualZoomLevelLimits(min, max),

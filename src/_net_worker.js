@@ -49,6 +49,15 @@ function getExternalIp(localAddress) {
 }
 
 function ping(target, port, local) {
+    // Validate target to prevent SSRF
+    const isIp = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(target);
+    const isLoopback = target === 'localhost' || target.startsWith('127.') || target === '::1';
+    const isPrivate = isIp && /^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/.test(target);
+
+    if (isLoopback || isPrivate) {
+        return Promise.reject(new Error("Ping to loopback or private network ranges is disallowed for security reasons."));
+    }
+
     return new Promise((resolve, reject) => {
         const s = new net.Socket();
         const start = process.hrtime();

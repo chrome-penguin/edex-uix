@@ -171,13 +171,19 @@ class Terminal {
             let sockHost = opts.host || "127.0.0.1";
             let sockPort = this.port;
 
-            this.socket = new WebSocket("ws://"+sockHost+":"+sockPort);
+            ipc.once("get-pty-token-reply", (e, token) => {
+                this.socket = new WebSocket("ws://"+sockHost+":"+sockPort+"?token="+encodeURIComponent(token));
+                this._initSocket();
+            });
+            ipc.send("get-pty-token");
+
+            this._initSocket = () => {
             this.socket.onopen = () => {
                 let attachAddon = new AttachAddon(this.socket);
                 this.term.loadAddon(attachAddon);
                 this.fit();
             };
-            this.socket.onerror = e => {throw JSON.stringify(e)};
+            this.socket.onerror = e => {console.error("WS error", e)};
             this.socket.onclose = e => {
                 if (this.onclose) {
                     this.onclose(e);
@@ -230,6 +236,7 @@ class Terminal {
             parent.addEventListener("touchcancel", e => {
                 this._lastTouch = null;
             });
+            }; // End of _initSocket
 
             document.querySelector(".xterm-helper-textarea").addEventListener("keydown", e => {
                 if (e.key === "F11" && window.settings.allowWindowed) {
@@ -312,8 +319,22 @@ class Terminal {
             this._getTtyCWD = tty => {
                 return new Promise((resolve, reject) => {
                     let pid = tty._pid;
+                    if (!pid) return reject("No PID");
                     switch(require("os").type()) {
                         case "Linux":
+                            // Mitigate PID reuse race by verifying process start time if possible,
+                            // or at least checking if it's still alive and belongs to us.
+                            try {
+                                const fs = require("fs");
+                                const stats = fs.statSync(`/proc/${pid}`);
+                                // Check if the process directory is owned by the current user
+                                if (stats.uid !== process.getuid()) {
+                                    return reject("PID reuse detected (UID mismatch)");
+                                }
+                            } catch (e) {
+                                return reject(e);
+                            }
+
                             require("fs").readlink(`/proc/${pid}/cwd`, (e, cwd) => {
                                 if (e !== null) {
                                     reject(e);
@@ -415,13 +436,18 @@ class Terminal {
 
             this.wss = new this.Websocket({
                 port: this.port,
+                host: "127.0.0.1",
                 clientTracking: true,
                 verifyClient: info => {
                     if (this.wss.clients.length >= 1) {
                         return false;
-                    } else {
-                        return true;
                     }
+                    const url = new URL(info.req.url, "http://localhost");
+                    const query = Object.fromEntries(url.searchParams);
+                    if (!opts.token || query.token !== opts.token) {
+                        return false;
+                    }
+                    return true;
                 }
             });
             this.Ipc.on("terminal_channel-"+this.port, (e, ...args) => {

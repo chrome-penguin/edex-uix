@@ -21,7 +21,7 @@ window._purifyCSS = str => {
     if (typeof str !== "string") {
         str = str.toString();
     }
-    return str.replace(/[<]/g, "");
+    return str.replace(/[<};]/g, "");
 };
 window._delay = ms => {
     return new Promise((resolve, reject) => {
@@ -626,33 +626,33 @@ window.openSettings = async () => {
                     <tr>
                         <td>shell</td>
                         <td>The program to run as a terminal emulator</td>
-                        <td><input type="text" id="settingsEditor-shell" value="${window.settings.shell}"></td>
+                        <td><input type="text" id="settingsEditor-shell" value="${window._escapeHtml(window.settings.shell)}"></td>
                     </tr>
                     <tr>
                         <td>shellArgs</td>
                         <td>Arguments to pass to the shell</td>
-                        <td><input type="text" id="settingsEditor-shellArgs" value="${window.settings.shellArgs || ''}"></td>
+                        <td><input type="text" id="settingsEditor-shellArgs" value="${window._escapeHtml(window.settings.shellArgs || '')}"></td>
                     </tr>
                     <tr>
                         <td>cwd</td>
                         <td>Working Directory to start in</td>
-                        <td><input type="text" id="settingsEditor-cwd" value="${window.settings.cwd}"></td>
+                        <td><input type="text" id="settingsEditor-cwd" value="${window._escapeHtml(window.settings.cwd)}"></td>
                     </tr>
                     <tr>
                         <td>env</td>
                         <td>Custom shell environment override</td>
-                        <td><input type="text" id="settingsEditor-env" value="${window.settings.env}"></td>
+                        <td><input type="text" id="settingsEditor-env" value="${window._escapeHtml(JSON.stringify(window.settings.env))}"></td>
                     </tr>
                     <tr>
                         <td>username</td>
                         <td>Custom username to display at boot</td>
-                        <td><input type="text" id="settingsEditor-username" value="${window.settings.username}"></td>
+                        <td><input type="text" id="settingsEditor-username" value="${window._escapeHtml(window.settings.username || '')}"></td>
                     </tr>
                     <tr>
                         <td>keyboard</td>
                         <td>On-screen keyboard layout code</td>
                         <td><select id="settingsEditor-keyboard">
-                            <option>${window.settings.keyboard}</option>
+                            <option>${window._escapeHtml(window.settings.keyboard)}</option>
                             ${keyboards}
                         </select></td>
                     </tr>
@@ -660,7 +660,7 @@ window.openSettings = async () => {
                         <td>theme</td>
                         <td>Name of the theme to load</td>
                         <td><select id="settingsEditor-theme">
-                            <option>${window.settings.theme}</option>
+                            <option>${window._escapeHtml(window.settings.theme)}</option>
                             ${themes}
                         </select></td>
                     </tr>
@@ -896,7 +896,7 @@ window.openShortcutsHelp = () => {
 
         appList += `<tr>
                         <td>${(cut.enabled) ? 'YES' : 'NO'}</td>
-                        <td><input disabled type="text" maxlength=25 value="${cut.trigger}"></td>
+                        <td><input disabled type="text" maxlength=25 value="${window._escapeHtml(cut.trigger)}"></td>
                         <td>${shortcutsDefinition[action]}</td>
                     </tr>`;
     });
@@ -905,9 +905,9 @@ window.openShortcutsHelp = () => {
     window.shortcuts.filter(e => e.type === "shell").forEach(cut => {
         customList += `<tr>
                             <td>${(cut.enabled) ? 'YES' : 'NO'}</td>
-                            <td><input disabled type="text" maxlength=25 value="${cut.trigger}"></td>
+                            <td><input disabled type="text" maxlength=25 value="${window._escapeHtml(cut.trigger)}"></td>
                             <td>
-                                <input disabled type="text" placeholder="Run terminal command..." value="${cut.action}">
+                                <input disabled type="text" placeholder="Run terminal command..." value="${window._escapeHtml(cut.action)}">
                                 <input disabled type="checkbox" name="shortcutsHelpNew_Enter" ${(cut. linebreak) ? 'checked' : ''}>
                                 <label for="shortcutsHelpNew_Enter">Enter</label>
                             </td>
@@ -1065,6 +1065,18 @@ window.registerKeyboardShortcuts = () => {
             }
         } else if (cut.type === "shell") {
             remote.globalShortcut.register(cut.trigger, () => {
+                const allowedActions = [
+                    "neofetch",
+                    "ls",
+                    "cd",
+                    "help"
+                    // Add more as needed or implement a more sophisticated allowlist
+                ];
+                const actionBase = cut.action.split(' ')[0];
+                if (!allowedActions.includes(actionBase)) {
+                    console.warn(`Blocked global shortcut execution of potentially dangerous shell command: ${cut.action}`);
+                    return;
+                }
                 let fn = (cut.linebreak) ? "writelr" : "write";
                 window.term[window.currentTerm][fn](cut.action);
             });
