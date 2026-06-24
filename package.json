@@ -99,7 +99,7 @@
     "howler": "^2.2.4",
     "maxmind": "^5.0.5",
     "mime-types": "^3.0.2",
-    "nanoid": "^5.1.7",
+    "nanoid": "^3.3.4",
     "node-pty": "^1.1.0",
     "pdfjs-dist": "^4.10.38",
     "pretty-bytes": "^7.1.0",
@@ -113,10 +113,10 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.0.3",
+    "@electron/rebuild": "^3.6.0",
     "clean-css": "^5.3.3",
     "cson-parser": "^4.0.9",
-    "electron": "^41.0.2",
+    "electron": "^34.0.0",
     "electron-builder": "^26.8.1",
     "node-abi": "^4.28.0",
     "node-json-minify": "^3.0.0",
