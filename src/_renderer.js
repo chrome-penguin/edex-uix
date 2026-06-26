@@ -37,9 +37,9 @@ window.onerror = (msg, path, line, col, error) => {
     document.getElementById("boot_screen").innerHTML += `${error} :  ${msg}<br/>==> at ${path}  ${line}:${col}`;
 };
 
-const { path, fs, ipc, remote, os, nanoid: nanoidGenerator, username: getUsername, webFrame, shell, __dirname } = window.eDEX;
+const { path, fs, ipc, app, process: eProcess, screen, clipboard, globalShortcut, getCurrentWindow, os, nanoid: nanoidGenerator, username: getUsername, webFrame, shell, __dirname } = window.eDEX;
 
-const settingsDir = remote.app.getPath("userData");
+const settingsDir = app.getPath("userData");
 const themesDir = path.join(settingsDir, "themes");
 const keyboardsDir = path.join(settingsDir, "keyboards");
 const fontsDir = path.join(settingsDir, "fonts");
@@ -53,12 +53,12 @@ window.shortcuts = JSON.parse(fs.readFileSync(shortcutsFile, "utf8"));
 window.lastWindowState = JSON.parse(fs.readFileSync(lastWindowStateFile, "utf8"));
 
 // Load CLI parameters
-if (remote.process.argv.includes("--nointro")) {
+if (eProcess.argv.includes("--nointro")) {
     window.settings.nointroOverride = true;
 } else {
     window.settings.nointroOverride = false;
 }
-if (remote.process.argv.includes("--nocursor")) {
+if (eProcess.argv.includes("--nocursor")) {
     window.settings.nocursorOverride = true;
 } else {
     window.settings.nocursorOverride = false;
@@ -201,7 +201,7 @@ function initSystemInformationProxy() {
 window.audioManager = new AudioManager();
 
 // See #223
-remote.app.focus();
+app.focus();
 
 let i = 0;
 if (window.settings.nointro || window.settings.nointroOverride) {
@@ -240,7 +240,7 @@ function displayLine() {
 
     switch(true) {
         case i === 2:
-            bootScreen.innerHTML += `eDEX-UI Kernel version ${remote.app.getVersion()} boot at ${Date().toString()}; root:xnu-1699.22.73~1/RELEASE_X86_64`;
+            bootScreen.innerHTML += `eDEX-UI Kernel version ${app.getVersion()} boot at ${Date().toString()}; root:xnu-1699.22.73~1/RELEASE_X86_64`;
         case i === 4:
             setTimeout(displayLine, 500);
             break;
@@ -484,7 +484,7 @@ async function initUI() {
     window.onmouseup = e => {
         if (window.keyboard.linkedToTerm) window.term[window.currentTerm].term.focus();
     };
-    window.term[0].term.writeln("\033[1m"+`Welcome to eDEX-UI v${remote.app.getVersion()} - Electron v${remote.process.versions.electron}`+"\033[0m");
+    window.term[0].term.writeln("\033[1m"+`Welcome to eDEX-UI v${app.getVersion()} - Electron v${eProcess.versions.electron}`+"\033[0m");
 
     await _delay(100);
 
@@ -606,7 +606,7 @@ window.openSettings = async () => {
         if (th === window.settings.theme) return;
         themes += `<option>${th}</option>`;
     });
-    for (let i = 0; i < remote.screen.getAllDisplays().length; i++) {
+    for (let i = 0; i < screen.getAllDisplays().length; i++) {
         if (i !== window.settings.monitor) monitors += `<option>${i}</option>`;
     }
     let nets = await window.si.networkInterfaces();
@@ -619,7 +619,7 @@ window.openSettings = async () => {
 
     new Modal({
         type: "custom",
-        title: `Settings <i>(v${remote.app.getVersion()})</i>`,
+        title: `Settings <i>(v${app.getVersion()})</i>`,
         html: `<table id="settingsEditor">
                     <tr>
                         <th>Key</th>
@@ -802,10 +802,10 @@ window.openSettings = async () => {
                 <h6 id="settingsEditorStatus">Loaded values from memory</h6>
                 <br>`,
         buttons: [
-            {label: "Open in External Editor", action:`shell.openPath('${settingsFile}');remote.getCurrentWindow().minimize();`},
+            {label: "Open in External Editor", action:`window.eDEX.shell.openPath('${settingsFile}');window.eDEX.getCurrentWindow().minimize();`},
             {label: "Save to Disk", action: "window.writeSettingsFile()"},
             {label: "Reload UI", action: "window.location.reload(true);"},
-            {label: "Restart eDEX", action: "remote.app.relaunch();remote.app.quit();"}
+            {label: "Restart eDEX", action: "window.eDEX.app.relaunch();window.eDEX.app.quit();"}
         ]
     }, () => {
         // Link the keyboard back to the terminal
@@ -863,7 +863,7 @@ window.writeSettingsFile = () => {
 };
 
 window.toggleFullScreen = () => {
-    const electronWin = remote.getCurrentWindow();
+    const electronWin = getCurrentWindow();
     let useFullscreen = (electronWin.isFullScreen() ? false : true);
     electronWin.setFullScreen(useFullscreen);
 
@@ -920,7 +920,7 @@ window.openShortcutsHelp = () => {
     window.keyboard.detach();
     new Modal({
         type: "custom",
-        title: `Available Keyboard Shortcuts <i>(v${remote.app.getVersion()})</i>`,
+        title: `Available Keyboard Shortcuts <i>(v${app.getVersion()})</i>`,
         html: `<h5>Using either the on-screen or a physical keyboard, you can use the following shortcuts:</h5>
                 <details open id="shortcutsHelpAccordeon1">
                     <summary>Emulator shortcuts</summary>
@@ -947,7 +947,7 @@ window.openShortcutsHelp = () => {
                 </details>
                 <br>`,
         buttons: [
-            {label: "Open Shortcuts File", action:`shell.openPath('${shortcutsFile}');remote.getCurrentWindow().minimize();`},
+            {label: "Open Shortcuts File", action:`window.eDEX.shell.openPath('${shortcutsFile}');window.eDEX.getCurrentWindow().minimize();`},
             {label: "Reload UI", action: "window.location.reload(true);"},
         ]
     }, () => {
@@ -1036,7 +1036,7 @@ window.useAppShortcut = action => {
             window.keyboard.togglePasswordMode();
             return true;
         case "DEV_DEBUG":
-            remote.getCurrentWindow().webContents.toggleDevTools();
+            getCurrentWindow().webContents.toggleDevTools();
             return true;
         case "DEV_RELOAD":
             window.location.reload(true);
@@ -1049,7 +1049,7 @@ window.useAppShortcut = action => {
 
 // Global keyboard shortcuts
 window.registerKeyboardShortcuts = () => {
-    remote.globalShortcut.unregisterAll();
+    globalShortcut.unregisterAll();
 
     window.shortcuts.forEach(cut => {
         if (!cut.enabled) return;
@@ -1059,15 +1059,15 @@ window.registerKeyboardShortcuts = () => {
                 for (let i = 1; i <= 5; i++) {
                     let trigger = cut.trigger.replace("X", i);
                     let dfn = () => { window.useAppShortcut(`TAB_${i}`) };
-                    remote.globalShortcut.register(trigger, dfn);
+                    globalShortcut.register(trigger, dfn);
                 }
             } else {
-                remote.globalShortcut.register(cut.trigger, () => {
+                globalShortcut.register(cut.trigger, () => {
                     window.useAppShortcut(cut.action);
                 });
             }
         } else if (cut.type === "shell") {
-            remote.globalShortcut.register(cut.trigger, () => {
+            globalShortcut.register(cut.trigger, () => {
                 const allowedActions = [
                     "neofetch",
                     "ls",
@@ -1096,7 +1096,7 @@ window.addEventListener("focus", () => {
 });
 
 window.addEventListener("blur", () => {
-    remote.globalShortcut.unregisterAll();
+    globalShortcut.unregisterAll();
 });
 
 // Prevent showing menu, exiting fullscreen or app with keyboard shortcuts
@@ -1121,7 +1121,7 @@ document.addEventListener("keydown", e => {
 // Fix #265
 window.addEventListener("keyup", e => {
     if (os.platform() === "win32" && e.key === "F4" && e.altKey === true) {
-        remote.app.quit();
+        app.quit();
     }
 });
 
@@ -1139,12 +1139,12 @@ window.onresize = () => {
 
 // See #413
 window.resizeTimeout = null;
-let electronWin = remote.getCurrentWindow();
+let electronWin = getCurrentWindow();
 electronWin.on("resize", () => {
     if (settings.keepGeometry === false) return;
     clearTimeout(window.resizeTimeout);
     window.resizeTimeout = setTimeout(() => {
-        let win = remote.getCurrentWindow();
+        let win = getCurrentWindow();
         if (win.isFullScreen()) return false;
         if (win.isMaximized()) {
             win.unmaximize();
@@ -1163,5 +1163,5 @@ electronWin.on("resize", () => {
 });
 
 electronWin.on("leave-full-screen", () => {
-    remote.getCurrentWindow().setSize(960, 540);
+    getCurrentWindow().setSize(960, 540);
 });

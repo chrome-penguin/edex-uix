@@ -26,9 +26,13 @@
     "productName": "eDEX-UI",
     "asar": true,
     "directories": {
-      "output": "dist",
-      "app": "src"
+      "output": "dist"
     },
+    "files": [
+      "src/**/*",
+      "LICENSE",
+      "README.md"
+    ],
     "linux": {
       "target": [
         "AppImage",
@@ -69,7 +73,6 @@
     "signale": "^1.4.0",
     "smoothie": "^1.36.1",
     "systeminformation": "^5.31.11",
-    "tail": "^2.2.6",
     "username": "^7.0.0",
     "which": "^7.0.0",
     "ws": "^8.21.0"

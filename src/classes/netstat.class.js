@@ -2,7 +2,6 @@ class Netstat {
     constructor(parentId) {
         if (!parentId) throw "Missing parameters";
 
-        const { ipcRenderer } = window.electron;
 
         // Create DOM
         this.parent = document.getElementById(parentId);
@@ -82,7 +81,7 @@ class Netstat {
 
             if (this.runsBeforeGeoIPUpdate === 0) {
                 try {
-                const ipInfo = await window.eDEX.ipcRenderer.invoke('get-external-ip', net.ip4);
+                const ipInfo = await window.eDEX.ipc.invoke('get-external-ip', net.ip4);
                     if (ipInfo && ipInfo.ip) {
                         this.ipinfo = ipInfo;
                         document.querySelector("#mod_netstat_innercontainer > div:nth-child(2) > h2").innerHTML = window._escapeHtml(ipInfo.ip);
@@ -97,7 +96,7 @@ class Netstat {
             }
 
             try {
-            const pingTime = await window.eDEX.ipcRenderer.invoke('ping', window.settings.pingAddr || "1.1.1.1", 80, net.ip4);
+            const pingTime = await window.eDEX.ipc.invoke('ping', window.settings.pingAddr || "1.1.1.1", 80, net.ip4);
                 this.offline = false;
                 document.querySelector("#mod_netstat_innercontainer > div:first-child > h2").innerHTML = "ONLINE";
                 document.querySelector("#mod_netstat_innercontainer > div:nth-child(3) > h2").innerHTML = Math.round(pingTime) + "ms";
