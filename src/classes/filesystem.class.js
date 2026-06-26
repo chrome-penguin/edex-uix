@@ -2,7 +2,7 @@ class FilesystemDisplay {
     constructor(opts) {
         if (!opts.parentId) throw "Missing options";
 
-        const { fs, path, remote, shell, mime } = window.eDEX;
+        const { fs, path, app, getCurrentWindow, shell, mime, process: eProcess } = window.eDEX;
         this.cwd = [];
         this.cwd_path = null;
         const r = parseInt(window.theme.r);
@@ -161,7 +161,7 @@ class FilesystemDisplay {
                 document.querySelector("section#filesystem > h3.title > p:first-of-type").innerText = "FILESYSTEM - TRACKING FAILED, RUNNING DETACHED FROM TTY";
             }
 
-            if (remote.process.platform === "win32" && dir.endsWith(":")) dir = dir+"\\";
+            if (eProcess.platform === "win32" && dir.endsWith(":")) dir = dir+"\\";
             let tcwd = dir;
             let content = await this.readdirAsync(tcwd).catch(err => {
                 console.warn(err);
@@ -312,7 +312,7 @@ class FilesystemDisplay {
             this.filesContainer.innerHTML = "";
             blockList.forEach((e, blockIndex) => {
                 let hidden = e.hidden ? " hidden" : "";
-                const electronWin = remote.getCurrentWindow();
+                const electronWin = getCurrentWindow();
 
                 const action = () => {
                     if (window.keyboard.container.dataset.isCtrlOn == "true") {
@@ -332,7 +332,7 @@ class FilesystemDisplay {
                             } else if (e.type === "up") {
                                 window.term[window.currentTerm].writelr("cd ..");
                             } else if (e.type === "disk" || e.type === "rom" || e.type === "usb") {
-                                if (remote.process.platform === "win32") {
+                                if (eProcess.platform === "win32") {
                                     window.term[window.currentTerm].writelr(blockList[blockIndex].path.replace(/\\/g, ''));
                                 } else {
                                     window.term[window.currentTerm].writelr(`cd "${blockList[blockIndex].path.replace(/\\/g, '')}"`);
@@ -535,7 +535,7 @@ class FilesystemDisplay {
         this.renderDiskUsage = async fsBlock => {
             if (document.getElementById("fs_space_bar").getAttribute("onclick") !== "" || fsBlock === null) return;
 
-            let splitter = (remote.process.platform === "win32") ? "\\" : "/";
+            let splitter = (eProcess.platform === "win32") ? "\\" : "/";
             let displayMount = (fsBlock.mount.length < 18) ? fsBlock.mount : "..."+splitter+fsBlock.mount.split(splitter).pop();
 
             // See #226

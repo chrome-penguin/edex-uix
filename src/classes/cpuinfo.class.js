@@ -2,7 +2,7 @@ class Cpuinfo {
     constructor(parentId) {
         if (!parentId) throw "Missing parameters";
 
-        const { smoothie, remote } = window.eDEX;
+        const { smoothie, getCurrentWindow, process: eProcess } = window.eDEX;
 
         // Create initial DOM
         this.parent = document.getElementById(parentId);
@@ -39,8 +39,8 @@ class Cpuinfo {
                 </div>
                 <div>
                     <div>
-                        <h1>${(remote.process.platform === "win32") ? "CORES" : "TEMP"}<br>
-                        <i id="mod_cpuinfo_temp">${(remote.process.platform === "win32") ? data.cores : "--°C"}</i></h1>
+                        <h1>${(eProcess.platform === "win32") ? "CORES" : "TEMP"}<br>
+                        <i id="mod_cpuinfo_temp">${(eProcess.platform === "win32") ? data.cores : "--°C"}</i></h1>
                     </div>
                     <div>
                         <h1>SPD<br>
@@ -101,7 +101,7 @@ class Cpuinfo {
             // Init updater
             this.updatingCPUload = false;
             this.updateCPUload();
-            if (remote.process.platform !== "win32") {this.updateCPUtemp();}
+            if (eProcess.platform !== "win32") {this.updateCPUtemp();}
             this.updatingCPUspeed = false;
             this.updateCPUspeed();
             this.updatingCPUtasks = false;
@@ -109,7 +109,7 @@ class Cpuinfo {
             this.loadUpdater = setInterval(() => {
                 this.updateCPUload();
             }, 500);
-            if (remote.process.platform !== "win32") {
+            if (eProcess.platform !== "win32") {
                 this.tempUpdater = setInterval(() => {
                     this.updateCPUtemp();
                 }, 2000);

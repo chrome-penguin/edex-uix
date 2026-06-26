@@ -383,42 +383,6 @@ app.on('ready', async () => {
         kbOverride = arg;
     });
 
-    /*
-    // Update Checker
-    // This feature is currently disabled because the original project is archived.
-    // If you're maintaining a fork, you can update the URL below to point to your repository.
-    const https = require("https");
-    https.get({
-        protocol: "https:",
-        host: "api.github.com",
-        path: "/repos/GitSquared/edex-ui/releases/latest",
-        headers: { "User-Agent": "eDEX-UI UpdateChecker" }
-    }, res => {
-        let rawData = "";
-        res.on('data', chunk => { rawData += chunk; });
-        res.on('end', () => {
-            if (res.statusCode === 200) {
-                try {
-                    const release = JSON.parse(rawData);
-                    const currentVersion = app.getVersion();
-                    const latestVersion = release.tag_name.slice(1);
-                    if (latestVersion !== currentVersion && Number(latestVersion.replace(/\./g, "")) > Number(currentVersion.replace("-pre", "").replace(/\./g, ""))) {
-                        win.webContents.send('new-version-available', release);
-                        signale.info(`UpdateChecker: New version ${release.tag_name} available.`);
-                    } else {
-                        signale.info("UpdateChecker: Running latest version.");
-                    }
-                } catch (e) {
-                    signale.warn("UpdateChecker: Could not parse release data.", e);
-                }
-            } else {
-                signale.warn(`UpdateChecker: Failed to fetch release info. Status code: ${res.statusCode}`);
-            }
-        });
-    }).on('error', e => {
-        signale.warn("UpdateChecker: Could not fetch latest release from GitHub's API.", e);
-    });
-    */
 });
 
 app.on('web-contents-created', (e, contents) => {

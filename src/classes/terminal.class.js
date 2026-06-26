@@ -3,7 +3,7 @@ class Terminal {
         if (opts.role === "client") {
             if (!opts.parentId) throw "Missing options";
 
-            const { xterm, color: colorFn, ipc, remote } = window.eDEX;
+            const { xterm, color: colorFn, ipc, screen, clipboard } = window.eDEX;
             const { Terminal: xTerm, AttachAddon, FitAddon, LigaturesAddon, WebglAddon } = xterm;
 
             this.port = opts.port || 3000;
@@ -250,7 +250,7 @@ class Terminal {
                 let {cols, rows} = fitAddon.proposeDimensions();
 
                 // Apply custom fixes based on screen ratio, see #302
-                const { width: w, height: h } = remote.screen.getPrimaryDisplay().workAreaSize;
+                const { width: w, height: h } = screen.getPrimaryDisplay().workAreaSize;
                 let x = 1;
                 let y = 0;
 
@@ -294,7 +294,7 @@ class Terminal {
                     this.clipboard.didCopy = true;
                 },
                 paste: () => {
-                    this.write(remote.clipboard.readText());
+                    this.write(clipboard.readText());
                     this.clipboard.didCopy = false;
                 },
                 didCopy: false
