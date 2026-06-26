@@ -59,9 +59,15 @@ class Keyboard {
         });
 
         // Parse keymap and create DOM
-        Object.keys(layout).forEach(row => {
-            this.container.innerHTML += `<div class="keyboard_row" id="`+row+`"></div>`;
-            layout[row].forEach(keyObj => {
+        Object.keys(layout).forEach(rowId => {
+            if (/[<>]/.test(rowId)) return; // Reject dangerous row IDs
+
+            const row = document.createElement("div");
+            row.className = "keyboard_row";
+            row.id = rowId;
+            this.container.appendChild(row);
+
+            layout[rowId].forEach(keyObj => {
 
                 let key = document.createElement("div");
                 key.setAttribute("class", "keyboard_key");
@@ -70,17 +76,18 @@ class Keyboard {
                     key.setAttribute("id", "keyboard_spacebar");
                 } else if (keyObj.cmd === "\r") {
                     key.setAttribute("class", "keyboard_key keyboard_enter");
-                    key.innerHTML = `<h1>${keyObj.name}</h1>`;
+                    const h1 = document.createElement("h1");
+                    h1.textContent = keyObj.name;
+                    key.appendChild(h1);
                 } else {
-                    key.innerHTML = `
-                        <h5>${keyObj.altshift_name || ""}</h5>
-                        <h4>${keyObj.fn_name || ""}</h4>
-                        <h3>${keyObj.alt_name || ""}</h3>
-                        <h2>${keyObj.shift_name || ""}</h2>
-                        <h1>${keyObj.name || ""}</h1>`;
+                    ["altshift_name", "fn_name", "alt_name", "shift_name", "name"].forEach((prop, i) => {
+                        const h = document.createElement(`h${5 - i}`);
+                        h.textContent = keyObj[prop] || "";
+                        key.appendChild(h);
+                    });
                 }
 
-                // Icon support, overrides previously defined innerHTML
+                // Icon support, overrides previously defined content
                 // Arrow and other icons
                 let icon = null;
                 if (keyObj.name.startsWith("ESCAPED|-- ICON: ")) {
@@ -114,7 +121,7 @@ class Keyboard {
                     }
                 });
 
-                document.getElementById(row).appendChild(key);
+                row.appendChild(key);
             });
         });
 

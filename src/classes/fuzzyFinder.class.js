@@ -126,7 +126,9 @@ class FuzzyFinder {
         
         let filePath = path.resolve(window.fsDisp.dirpath, file);
         
-          window.term[window.currentTerm].write(`'${filePath}'`);
+          // POSIX shell-quote-style escaping: wrap in single quotes, and escape single quotes
+          const escapedPath = `'${filePath.replace(/'/g, "'\\''")}'`;
+          window.term[window.currentTerm].write(escapedPath);
           this.disp.close();
      }
 }

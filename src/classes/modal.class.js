@@ -50,22 +50,44 @@ class Modal {
                 break;
         }
 
-        let DOMstring = `<div id="modal_${this.id}" class="${this.classes}" style="z-index:${zindex+Object.keys(window.modals).length};" augmented-ui="${augs.join(" ")} exe">
-            <h1>${this.title}</h1>
-            ${this.type === "custom" ? options.html : "<h5>"+this.message+"</h5>"}
-            <div>`;
-            buttons.forEach(b => {
-                DOMstring += `<button onclick="${b.action}">${b.label}</button>`;
-            });
-        DOMstring += `</div>
-        </div>`;
+        const element = document.createElement("div");
+        element.id = `modal_${this.id}`;
+        element.className = this.classes;
+        element.style.zIndex = zindex + Object.keys(window.modals).length;
+        element.setAttribute("augmented-ui", `${augs.join(" ")} exe`);
+
+        const h1 = document.createElement("h1");
+        h1.textContent = this.title;
+        element.appendChild(h1);
+
+        if (this.type === "custom") {
+            const content = document.createElement("div");
+            content.innerHTML = options.html;
+            element.appendChild(content);
+        } else {
+            const h5 = document.createElement("h5");
+            h5.innerHTML = this.message;
+            element.appendChild(h5);
+        }
+
+        const btnContainer = document.createElement("div");
+        buttons.forEach(b => {
+            const btn = document.createElement("button");
+            btn.textContent = b.label;
+            if (typeof b.action === "function") {
+                btn.onclick = b.action;
+            } else {
+                btn.setAttribute("onclick", b.action);
+            }
+            btnContainer.appendChild(btn);
+        });
+        element.appendChild(btnContainer);
 
         this.close = () => {
-            let modalElement = document.getElementById("modal_"+this.id);
-            modalElement.setAttribute("class", "modal_popup "+this.type+" blink");
+            element.className = "modal_popup " + this.type + " blink";
             window.audioManager.denied.play();
             setTimeout(() => {
-                modalElement.remove();
+                element.remove();
                 delete window.modals[this.id];
             }, 100);
 
@@ -75,8 +97,7 @@ class Modal {
         };
 
         this.focus = () => {
-            let modalElement = document.getElementById("modal_"+this.id);
-            modalElement.setAttribute("class", this.classes+" focus");
+            element.className = this.classes + " focus";
             Object.keys(window.modals).forEach(id => {
                 if (id === this.id) return;
                 window.modals[id].unfocus();
@@ -84,13 +105,8 @@ class Modal {
         };
 
         this.unfocus = () => {
-            let modalElement = document.getElementById("modal_"+this.id);
-            modalElement.setAttribute("class", this.classes);
+            element.className = this.classes;
         };
-
-        let tmp = document.createElement("div");
-        tmp.innerHTML = DOMstring;
-        let element = tmp.firstChild;
 
         element.addEventListener("mousedown", () => {
             this.focus();

@@ -47,10 +47,25 @@ class Toplist {
             });
             list.forEach(proc => {
                 let el = document.createElement("tr");
-                el.innerHTML = `<td>${proc.pid}</td>
-                                <td><strong>${proc.name}</strong></td>
-                                <td>${Math.round(proc.cpu*10)/10}%</td>
-                                <td>${Math.round(proc.mem*10)/10}%</td>`;
+
+                let tdPid = document.createElement("td");
+                tdPid.textContent = proc.pid;
+                el.appendChild(tdPid);
+
+                let tdName = document.createElement("td");
+                let strongName = document.createElement("strong");
+                strongName.textContent = proc.name;
+                tdName.appendChild(strongName);
+                el.appendChild(tdName);
+
+                let tdCpu = document.createElement("td");
+                tdCpu.textContent = `${Math.round(proc.cpu*10)/10}%`;
+                el.appendChild(tdCpu);
+
+                let tdMem = document.createElement("td");
+                tdMem.textContent = `${Math.round(proc.mem*10)/10}%`;
+                el.appendChild(tdMem);
+
                 document.getElementById("mod_toplist_table").append(el);
             });
             this.currentlyUpdating = false;
@@ -177,14 +192,25 @@ class Toplist {
 
                     list.forEach(proc => {
                         let el = document.createElement("tr");
-                        el.innerHTML = `<td class="pid">${proc.pid}</td>
-                            <td class="name">${proc.name}</td>
-                            <td class="user">${proc.user}</td>
-                            <td class="cpu">${Math.round(proc.cpu * 10) / 10}%</td>
-                            <td class="mem">${Math.round(proc.mem * 10) / 10}%</td>
-                            <td class="state">${proc.state}</td>
-                            <td class="started">${proc.started}</td>
-                            <td class="runtime">${formatRuntime(proc.runtime)}</td>`;
+
+                        const fields = [
+                            { className: "pid", value: proc.pid },
+                            { className: "name", value: proc.name },
+                            { className: "user", value: proc.user },
+                            { className: "cpu", value: `${Math.round(proc.cpu * 10) / 10}%` },
+                            { className: "mem", value: `${Math.round(proc.mem * 10) / 10}%` },
+                            { className: "state", value: proc.state },
+                            { className: "started", value: proc.started },
+                            { className: "runtime", value: formatRuntime(proc.runtime) }
+                        ];
+
+                        fields.forEach(f => {
+                            let td = document.createElement("td");
+                            td.className = f.className;
+                            td.textContent = f.value;
+                            el.appendChild(td);
+                        });
+
                         document.getElementById("processList").append(el);
                     });
                 }

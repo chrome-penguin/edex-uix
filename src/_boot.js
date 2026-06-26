@@ -237,12 +237,31 @@ app.on('ready', async () => {
     const shellEnvFn = typeof shellEnv === 'function' ? shellEnv : shellEnv.shellEnv;
     let cleanEnv = await shellEnvFn(settings.shell).catch(e => { throw e; });
 
+    const blockedEnv = ['LD_PRELOAD', 'LD_LIBRARY_PATH', 'DYLD_INSERT_LIBRARIES', 'NODE_OPTIONS', 'BASH_ENV', 'PROMPT_COMMAND', 'ENV'];
+    const filteredEnv = {};
+    if (settings.env && typeof settings.env === 'object') {
+        Object.keys(settings.env).forEach(key => {
+            if (!blockedEnv.includes(key) && !key.startsWith('DYLD_')) {
+                filteredEnv[key] = settings.env[key];
+            } else {
+                signale.warn(`Blocked attempt to set sensitive environment variable: ${key}`);
+            }
+        });
+    }
+
     Object.assign(cleanEnv, {
         TERM: "xterm-256color",
         COLORTERM: "truecolor",
         TERM_PROGRAM: "eDEX-UI",
         TERM_PROGRAM_VERSION: app.getVersion()
-    }, settings.env);
+    }, filteredEnv);
+
+    // Generate a random token for PTY WebSocket authentication
+    const { nanoid } = require("nanoid/non-secure");
+    const ptyToken = nanoid();
+    ipc.on("get-pty-token", (e) => {
+        e.sender.send("get-pty-token-reply", ptyToken);
+    });
 
     signale.pending(`Creating new terminal process on port ${settings.port || '3000'}`);
     tty = new Terminal({
@@ -251,7 +270,8 @@ app.on('ready', async () => {
         params: settings.shellArgs || '',
         cwd: settings.cwd,
         env: cleanEnv,
-        port: settings.port || 3000
+        port: settings.port || 3000,
+        token: ptyToken
     });
     signale.success(`Terminal back-end initialized!`);
     tty.onclosed = (code, signal) => {
@@ -291,7 +311,15 @@ app.on('ready', async () => {
         extraTtys[basePort+i] = null;
     }
 
+    let lastTtySpawn = 0;
     ipc.on("ttyspawn", (e, arg) => {
+        const now = Date.now();
+        if (now - lastTtySpawn < 1000) {
+            signale.warn("TTY spawn request throttled");
+            return;
+        }
+        lastTtySpawn = now;
+
         let port = null;
         Object.keys(extraTtys).forEach(key => {
             if (extraTtys[key] === null && port === null) {
@@ -311,7 +339,8 @@ app.on('ready', async () => {
                 params: settings.shellArgs || '',
                 cwd: tty.tty._cwd || settings.cwd,
                 env: cleanEnv,
-                port: port
+                port: port,
+                token: ptyToken
             });
             signale.success(`New terminal back-end initialized at ${port}`);
             term.onclosed = (code, signal) => {
@@ -396,7 +425,16 @@ app.on('web-contents-created', (e, contents) => {
     // Prevent creating more than one window
     contents.on('new-window', (e, url) => {
         e.preventDefault();
-        shell.openExternal(url);
+        try {
+            const parsedUrl = new URL(url);
+            if (['http:', 'https:', 'mailto:'].includes(parsedUrl.protocol)) {
+                shell.openExternal(url);
+            } else {
+                signale.warn(`Blocked new-window attempt to open external URL with disallowed protocol: ${parsedUrl.protocol}`);
+            }
+        } catch (err) {
+            signale.error(`Failed to parse URL in new-window handler: ${url}`);
+        }
     });
 
     // Prevent loading something else than the UI
