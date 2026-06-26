@@ -256,6 +256,13 @@ app.on('ready', async () => {
         TERM_PROGRAM_VERSION: app.getVersion()
     }, filteredEnv);
 
+    // Generate a random token for PTY WebSocket authentication
+    const { nanoid } = require("nanoid/non-secure");
+    const ptyToken = nanoid();
+    ipc.on("get-pty-token", (e) => {
+        e.sender.send("get-pty-token-reply", ptyToken);
+    });
+
     signale.pending(`Creating new terminal process on port ${settings.port || '3000'}`);
     tty = new Terminal({
         role: "server",
@@ -283,13 +290,6 @@ app.on('ready', async () => {
         signale.error("Lost connection to frontend");
         signale.watch("Waiting for frontend connection...");
     };
-
-    // Generate a random token for PTY WebSocket authentication
-    const { nanoid } = require("nanoid/non-secure");
-    const ptyToken = nanoid();
-    ipc.on("get-pty-token", (e) => {
-        e.sender.send("get-pty-token-reply", ptyToken);
-    });
 
     // Support for multithreaded systeminformation calls
     signale.pending("Starting multithreaded calls controller...");

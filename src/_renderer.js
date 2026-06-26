@@ -14,14 +14,17 @@ window._escapeHtml = text => {
     return text.replace(/[&<>"']/g, m => {return map[m];});
 };
 window._encodePathURI = uri => {
-    return encodeURI(uri).replace(/#/g, "%23");
+    return encodeURI(uri).replace(/#/g, "%23").replace(/"/g, "%22").replace(/'/g, "%27");
+};
+window._shellQuote = str => {
+    return `'${str.replace(/'/g, "'\\''")}'`;
 };
 window._purifyCSS = str => {
     if (typeof str === "undefined") return "";
     if (typeof str !== "string") {
         str = str.toString();
     }
-    return str.replace(/[<};]/g, "");
+    return str.replace(/[<};"']/g, "");
 };
 window._delay = ms => {
     return new Promise((resolve, reject) => {

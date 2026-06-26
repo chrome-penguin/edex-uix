@@ -60,6 +60,8 @@ class Keyboard {
 
         // Parse keymap and create DOM
         Object.keys(layout).forEach(rowId => {
+            if (/[<>]/.test(rowId)) return; // Reject dangerous row IDs
+
             const row = document.createElement("div");
             row.className = "keyboard_row";
             row.id = rowId;
@@ -119,7 +121,7 @@ class Keyboard {
                     }
                 });
 
-                document.getElementById(row).appendChild(key);
+                row.appendChild(key);
             });
         });
 
