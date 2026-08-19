@@ -79,6 +79,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",
+    "cson-parser": "^4.0.9",
     "electron": "^42.5.0",
     "electron-builder": "^26.15.3",
     "terser": "^5.48.0"

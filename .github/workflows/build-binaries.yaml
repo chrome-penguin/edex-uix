@@ -66,7 +66,7 @@ jobs:
     - name: Cache Electron binaries
       uses: actions/cache@v4
       with:
-        path: ~/AppData/Local/electron/Cache
+        path: ~\AppData\Local\electron\Cache
         key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-electron-
